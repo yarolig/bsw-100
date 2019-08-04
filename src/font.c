@@ -8,12 +8,6 @@ __attribute__ ((aligned (512))) PROGMEM const char font_char_scanlines[]  = {
 0x08, 0x95,   // ret
 0x08, 0x95,   // ret
 0x08, 0x95,   // ret
-// 0x08, 0x95,   // ret
-// 0x08, 0x95,//0xa8, 0x2f,   // mov     r26, r24 // XL = r24
-// 0x08, 0x95,//0xb9, 0x2f,   // mov     r27, r25 // XH = r25
-// 0x08, 0x95,//0xf7, 0x2f,   // mov     r31, r23 // ZH = r23
-// 0x08, 0x95,//0xed, 0x91,   // ld      r30, X+  // ZL = *X++
-// 0x09, 0x94,   // ijmp
 // 0 XXXXXX_ addr:0x604
 0x98, 0xb9,   // out 0x08, r25
 0xed, 0x91,   // ld r30, X+
@@ -243,13 +237,13 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #35 # col 0
     53 ,// X____X_
     // char #36 $ col 0
-    102 ,// __X____
+    109 ,// ___X___
     // char #37 % col 0
     53 ,// X____X_
     // char #38 & col 0
     81 ,// _XX____
     // char #39 ' col 0
-    102 ,// __X____
+    95 ,// __XXX__
     // char #40 ( col 0
     102 ,// __X____
     // char #41 ) col 0
@@ -269,7 +263,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #48 0 col 0
     4 ,// XXXXXX_
     // char #49 1 col 0
-    116 ,// _____X_
+    102 ,// __X____
     // char #50 2 col 0
     4 ,// XXXXXX_
     // char #51 3 col 0
@@ -365,7 +359,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #96 ` col 0
     60 ,// X______
     // char #97 a col 0
-    74 ,// _XXXX__
+    123 ,// _______
     // char #98 b col 0
     60 ,// X______
     // char #99 c col 0
@@ -377,7 +371,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #102 f col 0
     95 ,// __XXX__
     // char #103 g col 0
-    67 ,// _XXXXX_
+    123 ,// _______
     // char #104 h col 0
     60 ,// X______
     // char #105 i col 0
@@ -500,13 +494,13 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #35 # col 1
     11 ,// XXXXX__
     // char #36 $ col 1
-    74 ,// _XXXX__
+    109 ,// ___X___
     // char #37 % col 1
     109 ,// ___X___
     // char #38 & col 1
     60 ,// X______
     // char #39 ' col 1
-    102 ,// __X____
+    95 ,// __XXX__
     // char #40 ( col 1
     60 ,// X______
     // char #41 ) col 1
@@ -526,7 +520,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #48 0 col 1
     53 ,// X____X_
     // char #49 1 col 1
-    116 ,// _____X_
+    81 ,// _XX____
     // char #50 2 col 1
     116 ,// _____X_
     // char #51 3 col 1
@@ -622,7 +616,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #96 ` col 1
     102 ,// __X____
     // char #97 a col 1
-    116 ,// _____X_
+    74 ,// _XXXX__
     // char #98 b col 1
     60 ,// X______
     // char #99 c col 1
@@ -634,7 +628,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #102 f col 1
     102 ,// __X____
     // char #103 g col 1
-    53 ,// X____X_
+    67 ,// _XXXXX_
     // char #104 h col 1
     60 ,// X______
     // char #105 i col 1
@@ -757,13 +751,13 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #35 # col 2
     53 ,// X____X_
     // char #36 $ col 2
-    74 ,// _XXXX__
+    67 ,// _XXXXX_
     // char #37 % col 2
     102 ,// __X____
     // char #38 & col 2
     88 ,// _X___X_
     // char #39 ' col 2
-    102 ,// __X____
+    109 ,// ___X___
     // char #40 ( col 2
     60 ,// X______
     // char #41 ) col 2
@@ -783,7 +777,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #48 0 col 2
     53 ,// X____X_
     // char #49 1 col 2
-    116 ,// _____X_
+    102 ,// __X____
     // char #50 2 col 2
     4 ,// XXXXXX_
     // char #51 3 col 2
@@ -887,11 +881,11 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #100 d col 2
     67 ,// _XXXXX_
     // char #101 e col 2
-    11 ,// XXXXX__
+    4 ,// XXXXXX_
     // char #102 f col 2
     74 ,// _XXXX__
     // char #103 g col 2
-    67 ,// _XXXXX_
+    53 ,// X____X_
     // char #104 h col 2
     11 ,// XXXXX__
     // char #105 i col 2
@@ -1014,7 +1008,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #35 # col 3
     11 ,// XXXXX__
     // char #36 $ col 3
-    74 ,// _XXXX__
+    11 ,// XXXXX__
     // char #37 % col 3
     53 ,// X____X_
     // char #38 & col 3
@@ -1040,7 +1034,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #48 0 col 3
     53 ,// X____X_
     // char #49 1 col 3
-    116 ,// _____X_
+    102 ,// __X____
     // char #50 2 col 3
     60 ,// X______
     // char #51 3 col 3
@@ -1148,7 +1142,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #102 f col 3
     102 ,// __X____
     // char #103 g col 3
-    116 ,// _____X_
+    67 ,// _XXXXX_
     // char #104 h col 3
     53 ,// X____X_
     // char #105 i col 3
@@ -1271,7 +1265,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #35 # col 4
     53 ,// X____X_
     // char #36 $ col 4
-    102 ,// __X____
+    109 ,// ___X___
     // char #37 % col 4
     123 ,// _______
     // char #38 & col 4
@@ -1297,7 +1291,7 @@ __attribute__ ((aligned (256))) char font_chars[]  = {
     // char #48 0 col 4
     4 ,// XXXXXX_
     // char #49 1 col 4
-    116 ,// _____X_
+    102 ,// __X____
     // char #50 2 col 4
     4 ,// XXXXXX_
     // char #51 3 col 4

@@ -11,7 +11,7 @@ See LICENSE.txt for details.
 
 ## Features
  - Popular 16Mhz atmega328 chip with small number of other parts
- - 40x29 characters
+ - 40x29 characters, 6x5 font (or 6x10, even lines are black)
  - Single color on black background
  - VGA output
  - PS/2 keyboard
@@ -23,12 +23,13 @@ See LICENSE.txt for details.
  - TODO: understand Escape-sequences that should be invisible
 
 ## Misfeatures
-- Terrible font
-- Delayed reaction to key presses
+ - Terrible font
+ - Delayed reaction to key presses
 
 ## Installing with platformio
 To build firmware install platformio and run
 
+    ./rebuild-font.sh
     platformio run
 To flash firmware run:
 
@@ -58,3 +59,27 @@ Launch:
 ## Using as a console for router
 Break you router apart, locate UART interface, solder some wires and connect
 GND, TX, RX from router to GND, RX, TX pins of atmega328p.
+
+## Hardware
+
+    ROUTER_RX--TX1            VIN
+    ROUTER_TX--RX1            GND--KB_GND--VGA_GND
+               RST            RST
+    ROUTER_GND-GND            5V---KB_POWER
+               D2             A7
+    VGA_VSYNC--D3             A6
+               D4   Arduino   A5
+               D5    Nano     A4
+               D6             A3
+               D7             A2---1k resistor--VGA_B
+               D8             A1---1k resistor--VGA_G
+    VGA_HSYNC--D9             A0---1k resistor--VGA_R
+    GND--------D10            REF
+    KB_DATA----D11            3V3
+               D12            D13--NOT gate--NOT gate--KB_CLK
+
+
+
+
+
+
