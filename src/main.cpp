@@ -45,6 +45,15 @@ u8 kb_received;
 u8 uart_received;
 u8 console_cursor_row, console_cursor_col;
 u8 console_top_row;
+u8 term_status, term_csi1, term_csi2;
+
+#define TS_NORMAL 0
+#define TS_ESCAPE 1
+#define TS_CSI 2
+#define TS_CSI2 3
+#define TS_VT52_Y1 4
+#define TS_VT52_Y2 5
+
 
 unsigned char screen_scanline[console_width + 1];
 u8 console[console_width*console_height];
@@ -190,12 +199,23 @@ static INLINE void increase_row(u8& row) {
     }
 }
 
-static INLINE void term_handle_ch(u8 ch){
+
+static INLINE void decrease_row(u8& row) {
+    if (row==0) {
+        row = console_height - 1;
+    } else {
+        row--;
+    }
+}
+
+
+static INLINE void term_handle_ch_normal(u8 ch){
     ch = ch & ~128;
     if (ch=='\r') {
         console_cursor_col = 0;
         return;
     }
+
     if (ch==8 || ch == 127) {
         if (console_cursor_col>0) {
             console_cursor_col--;
@@ -234,9 +254,129 @@ static INLINE void term_handle_ch(u8 ch){
     console_cursor_col++;
     if (console_cursor_col==console_width){
         console_cursor_col=0;
-        term_handle_ch('\n');
+        term_handle_ch_normal('\n');
     }
 }
+
+/*
+mach|Mach Console,
+        am, km,
+        cols#80, it#8, lines#25,
+        bel=^G, blink=\E[5m, bold=\E[1m, clear=\Ec, cr=^M,
+        cub=\E[%p1%dD, cub1=^H, cud=\E[%p1%dB, cud1=^J,
+        cuf=\E[%p1%dC, cuf1=\E[C, cup=\E[%i%p1%d;%p2%dH,
+        cuu=\E[%p1%dA, cuu1=\E[A, dl=\E[%p1%dM, dl1=\E[M, ed=\E[J,
+        el=\E[K, home=\E[H, ht=^I, il=\E[%p1%dL, il1=\E[L, ind=^J,
+        kbs=\177, kcub1=\E[D, kcud1=\E[B, kcuf1=\E[C, kcuu1=\E[A,
+        kdch1=\E[9, kend=\E[Y, kf1=\EOP, kf10=\EOY, kf2=\EOQ,
+        kf3=\EOR, kf4=\EOS, kf5=\EOT, kf6=\EOU, kf7=\EOV, kf8=\EOW,
+        kf9=\EOX, khome=\E[H, kich1=\E[@, kll=\E[F, knp=\E[U,
+        kpp=\E[V, rev=\E[7m, rmso=\E[0m, rmul=\E[24m, sgr0=\E[0m,
+        smso=\E[7m, smul=\E[4m,
+
+#       Reconstructed via infocmp from file: /lib/terminfo/v/vt52
+vt52|dec vt52,
+        cols#80, it#8, lines#24,
+        acsc=+h.k0affggolpnqprrss, bel=^G, clear=\EH\EJ, cr=^M,
+        cub1=\ED, cud1=\EB, cuf1=\EC,
+        cup=\EY%p1%' '%+%c%p2%' '%+%c, cuu1=\EA, ed=\EJ, el=\EK,
+        home=\EH, ht=^I, ind=^J, kbs=^H, kcub1=\ED, kcud1=\EB,
+        kcuf1=\EC, kcuu1=\EA, nel=^M^J, ri=\EI, rmacs=\EG, smacs=\EF,
+
+*/
+static INLINE void term_handle_ch_escape(u8 ch) {
+    if (ch == 'A') {        // vt52 cuu, cursor_up
+        increase_row(console_cursor_row);
+    } else if (ch == 'B') { // vt52 cud, cursor_down
+        decrease_row(console_cursor_row);
+    } else if (ch == 'C') { // vt52 cuf, cursor_right
+        if (console_cursor_col!=console_width) {
+            console_cursor_col++;
+        }
+    } else if (ch == 'D') { // vt52 cub, cursor_left
+        if (console_cursor_col!=0) {
+            console_cursor_col--;
+        }
+    } else if (ch == 'Y') { // vt52 position cursor
+        term_status = TS_VT52_Y1;
+    }
+}
+
+static INLINE void term_handle_ch_csi(u8 ch) {
+    if (ch == 'H') {
+        if (term_csi1 == 0) term_csi1 = 1;
+        if (term_csi2 == 0) term_csi2 = 1;
+
+        console_cursor_row = term_csi1 - 1;
+        console_cursor_col = term_csi2 - 1;
+
+        console_cursor_row = (console_cursor_row + console_top_row) % console_height;
+
+        if (console_cursor_col>console_width) {
+            console_cursor_col = console_width - 1;
+        }
+    } else if (ch == 'J' || ch == 'c') {
+        for (u8 a=0;a<console_height;a++) {
+            clear_console_line(&console[a*console_width], ch);
+        }
+    } else if (ch == 'A') {        // vt100 cuu, cursor_up
+        increase_row(console_cursor_row);
+    } else if (ch == 'B') { // vt100 cud, cursor_down
+        decrease_row(console_cursor_row);
+    } else if (ch == 'C') { // vt100 cuf, cursor_right
+        if (console_cursor_col!=console_width) {
+            console_cursor_col++;
+        }
+    } else if (ch == 'D') { // vt100 cub, cursor_left
+        if (console_cursor_col!=0) {
+            console_cursor_col--;
+        }
+    }
+    term_csi1 = 0;
+    term_csi2 = 0;
+}
+
+static INLINE void term_handle_ch(u8 ch){
+    if (term_status == TS_NORMAL) {
+        if (ch=='\e') {
+            term_status = TS_ESCAPE;
+        } else {
+            term_handle_ch_normal(ch);
+        }
+    } else if (term_status == TS_ESCAPE) {
+        if (ch=='[') {
+            term_status = TS_CSI;
+        } else {
+            term_handle_ch_escape(ch);
+            term_status = TS_NORMAL;
+        }
+    } else if (term_status == TS_CSI) {
+        if (ch==';') {
+            term_status = TS_CSI2;
+        } else if ('0' <= ch && ch <= '9') {
+            term_csi1 += term_csi1*10 + ch - '0';
+        } else {
+            term_handle_ch_csi(ch);
+            term_status = TS_NORMAL;
+        }
+    } else if (term_status == TS_CSI2) {
+        if ('0' <= ch && ch <= '9') {
+            term_csi2 += term_csi2*10 + ch - '0';
+        } else {
+            term_handle_ch_csi(ch);
+            term_status = TS_NORMAL;
+        }
+    } else if (term_status == TS_VT52_Y1) {
+        term_csi1 = ch - ' ';
+        term_status = TS_VT52_Y2;
+    } else if (term_status == TS_VT52_Y2) {
+        term_csi2 = ch - ' ';
+        term_handle_ch_csi('H');
+        term_status = TS_NORMAL;
+    }
+}
+
+
 
 static INLINE void process_uart() {
     if (uart_received) {
@@ -247,13 +387,9 @@ static INLINE void process_uart() {
         }
         uart_received = 0;
     }
-    if (kb_received) {
-        USART_Transmit(kb_received);
-        kb_received = 0;
-    }
 
     spi_update();
-    if (kb_received && USART_CanWrite()) {
+    if (kb_received) {
         USART_Transmit(kb_received);
         kb_received = 0;
     }
@@ -270,7 +406,6 @@ static INLINE void preprocess_uart() {
     if (USART_CanRead()) {
         uart_received = USART_Receive();
     }
-    spi_update();
 }
 
 static INLINE void prepare_scanline() {
