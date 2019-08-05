@@ -41,11 +41,27 @@ const u8 PROGMEM banner[] =
 u16 line = 0;
 u8 current_screen_row;
 u8 current_char_row;
-u8 kb_received;
+// u8 kb_received;
 u8 uart_received;
 u8 console_cursor_row, console_cursor_col;
 u8 console_top_row;
 u8 term_status, term_csi1, term_csi2;
+u8 tx_buf[8];
+u8 tx_buf_start, tx_buf_end;
+
+void addbuf(u8 ch) {
+    tx_buf[tx_buf_end++] = ch;
+    tx_buf_end = tx_buf_end % 8;
+}
+
+u8 getbuf() {
+    if (tx_buf_start==tx_buf_end) {
+        return 0;
+    }
+    u8 res = tx_buf[tx_buf_start++];
+    tx_buf_start = tx_buf_start % 8;
+    return res;
+}
 
 #define TS_NORMAL 0
 #define TS_ESCAPE 1
@@ -102,7 +118,36 @@ INLINE void kb_new_byte() {
                     if (kb_ctrled) {
                         sc = sc + 1 - 'a';
                     }
-                    kb_received = sc;
+                    if (sc & 128) {
+                            addbuf('\e');
+                            addbuf('[');
+                            addbuf('0' + (sc - 128));
+                            addbuf('F');
+                    } else if ( kb_prev_ext && '.' <= sc && sc <= '9') {
+                        if (sc == '8') {
+                            addbuf('\e'); addbuf('['); addbuf('A');
+                        } else if (sc == '2') {
+                            addbuf('\e'); addbuf('['); addbuf('B');
+                        } else if (sc == '4') {
+                            addbuf('\e'); addbuf('['); addbuf('D');
+                        } else if (sc == '6') {
+                            addbuf('\e'); addbuf('['); addbuf('C');
+                        } else if (sc == '7') { // Home
+                            addbuf('\e'); addbuf('['); addbuf('H');
+                        } else if (sc == '1') { // End
+                            addbuf('\e'); addbuf('['); addbuf('F');
+                        } else if (sc == '9') { // PageUp
+                            addbuf('\e'); addbuf('['); addbuf('5'); addbuf('~');
+                        } else if (sc == '3') { // PageDown
+                            addbuf('\e'); addbuf('['); addbuf('6'); addbuf('~');
+                        } else if (sc == '.') { // Delete
+                            addbuf('\e'); addbuf('['); addbuf('3'); addbuf('~');
+                        } else if (sc == '/') { // Insert
+                            addbuf('\e'); addbuf('['); addbuf('2'); addbuf('~');
+                        }
+                    } else {
+                        addbuf(sc);
+                    }
                 }
             } else {/*
                 if (prev_up) {
@@ -231,7 +276,7 @@ static INLINE void term_handle_ch_normal(u8 ch){
                 console[console_top_row*console_width+a] = 0;
             }
 #else
-            clear_console_line(&console[console_top_row*console_width], 0);
+            clear_console_line(&console[console_top_row*console_width],  ' ');
 #endif
             increase_row(console_top_row);
         }
@@ -315,9 +360,10 @@ static INLINE void term_handle_ch_csi(u8 ch) {
         if (console_cursor_col>console_width) {
             console_cursor_col = console_width - 1;
         }
-    } else if (ch == 'J' || ch == 'c') {
-        for (u8 a=0;a<console_height;a++) {
-            clear_console_line(&console[a*console_width], ch);
+    } else if (ch == 'J') {
+        clear_console_line(&console[0], ' ');
+        for (u8 a=1;a<console_height;a++) {
+            console[a*console_width] = 0;
         }
     } else if (ch == 'A') {        // vt100 cuu, cursor_up
         increase_row(console_cursor_row);
@@ -387,11 +433,11 @@ static INLINE void process_uart() {
         }
         uart_received = 0;
     }
-
-    spi_update();
-    if (kb_received) {
-        USART_Transmit(kb_received);
-        kb_received = 0;
+    if (USART_CanWrite()){
+        u8 gb = getbuf();
+        if (gb) {
+            USART_Transmit(gb);
+        }
     }
     if (USART_CanRead()) {
         u8 ch = USART_Receive();
@@ -422,7 +468,17 @@ static INLINE void prepare_scanline() {
             clear_console_line(screen_scanline, 123);
             screen_scanline[console_cursor_col] = 67;
             screen_scanline[console_cursor_col+1] = 0;
+        } else if (current_char_row == 6) {
+            // Apply delayed screen clearing
+            current_console_row_no += console_top_row;
+            if (current_console_row_no >= console_height) {
+                current_console_row_no -= console_height;
+            }
+            if (0 == console[current_console_row_no*console_width]) {
+                clear_console_line(&console[current_console_row_no*console_width], ' ');
+            }
         }
+        spi_update();
         process_uart();
         process_uart();
         return;
@@ -472,6 +528,7 @@ static INLINE void on_timer1(){
         PORTC = 0x00;
         return;
     } else {
+        spi_update();
         process_uart();
         process_uart();
     }

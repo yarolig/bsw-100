@@ -71,44 +71,22 @@ f7 ^[[18~ -- f8 ^[[19~ -- f9 ^[[20~ -- f10 ^[[21~ -- f11 ^[[23~ --
 PU ^[[5~ -- PD ^[[6~ -- H ^[[H -- E ^[[F -- D ^[[3~
 */
 
-#define BSW_F1 (128+1)
-#define BSW_F2 (128+2)
-#define BSW_F3 (128+3)
-#define BSW_F4 (128+4)
-#define BSW_F5 (128+5)
-#define BSW_F6 (128+6)
-#define BSW_F7 (128+7)
-#define BSW_F8 (128+8)
-#define BSW_F9 (128+9)
-#define BSW_F10 (128+10)
-#define BSW_F11 (128+11)
-#define BSW_F12 (128+12)
 
-#define BSW_LEFT (128+13)
-#define BSW_RIGHT (128+14)
-#define BSW_UP (128+15)
-#define BSW_DOWN (128+16)
-#define BSW_HOME (128+17)
-#define BSW_END (128+18)
-#define BSW_PAGEUP (128+19)
-#define BSW_PAGEDOWN (128+20)
-#define BSW_DELETE (128+21)
-#define BSW_INSERT (128+22)
 
 const u8 PROGMEM scancodes[] = {
     '?', // 0x0
-    '?', // 0x1
+    BSW_F9, // 0x1
     '?', // 0x2
-    '?', // 0x3
-    '?', // 0x4
-    '?', // 0x5
-    '?', // 0x6
-    '?', // 0x7
+    BSW_F5, // 0x3
+    BSW_F3, // 0x4
+    BSW_F1, // 0x5
+    BSW_F2, // 0x6
+    BSW_F12, // 0x7
     '?', // 0x8
-    '?', // 0x9
-    '?', // 0xa
-    '?', // 0xb
-    '?', // 0xc
+    BSW_F10, // 0x9
+    BSW_F8, // 0xa
+    BSW_F6, // 0xb
+    BSW_F4, // 0xc
     '\t', // 0xd
     '`', // 0xe
     '?', // 0xf
@@ -216,7 +194,7 @@ const u8 PROGMEM scancodes[] = {
     '8', // 0x75 // numpad
     '\e', // 0x76
     '?', // 0x77
-    '?', // 0x78
+    BSW_F11, // 0x78
     '+', // 0x79 // numpad
     '3', // 0x7a  // numpad
     '-', // 0x7b // numpad
@@ -227,7 +205,7 @@ const u8 PROGMEM scancodes[] = {
     '?', // 0x80
     '?', // 0x81
     '?', // 0x82
-    '?', // 0x83
+    BSW_F7, // 0x83
     '?', // 0x84
     '?', // 0x85
     '?', // 0x86
