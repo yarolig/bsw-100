@@ -12,19 +12,19 @@ See LICENSE.txt for details.
 ## Features
  - Popular 16Mhz atmega328 chip with small number of other parts
  - 40x29 characters, 6x5 font (or 6x10, even lines are black)
- - Single color on black background
+ - Single color on black background, whitespace can be highlighted
  - VGA output
  - PS/2 keyboard
- - Serial interface that can be connected to router or PC
+ - Serial interface that can be connected to a router or a PC
  - BackSpace Works! Arrow keys, F1-F12, Home/End too.
  - Terminfo entry
- - vim works!
+ - Working programs: bash, vim, more, links
  - TODO: mc, alsamixer, less, aptitude, nethack, emacs, info, nano
  - TODO: NumLock, CapsLock, Shift+Function keys, Ctrl+[, Alt+X
  - TODO: highlight text to make mc usable
 
 ## Misfeatures
- - Terrible font
+ - Meagre font
  - Delayed reaction to key presses
 
 ## Installing with platformio

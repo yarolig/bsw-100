@@ -74,13 +74,20 @@ def can_ld(line, pos, already, prev):
     if line[pos] == line[pos+1]:
         return True
 
-
 def can_skip2(line, pos, already, prev):
     if prev != line[pos]:
         return False
     if pos + 1 >= len(line):
         return False
     if line[pos] == line[pos+1]:
+        return True
+
+def can_skip3(line, pos, already, prev):
+    if prev != line[pos]:
+        return False
+    if pos + 2 >= len(line):
+        return False
+    if line[pos] == line[pos+1] and line[pos] == line[pos+2]:
         return True
 
 lito = {}
@@ -109,24 +116,27 @@ for i in ii:
     fo.write('// ' +str(n)+ ' ' +str(i) + ' addr:' + hex(0x600+line_index_to_offset(n)) + '\n')
     already = False
     prev = '?'
-    skip = False
+    skip = 0
     for pos in xrange(len(i)):
         if skip:
-            skip = False
+            skip -= 1
         elif can_ld(i, pos, already, prev):
             already = True
-            skip = True
+            skip = 1
             fo.write("0xed, 0x91,   // ld r30, X+\n")
             cmdno += 1
-        #elif can_skip3(i, pos, already, prev):
-        #    fo.write("0x24, 0x91,   // lpm     r18, Z ; 3")
-        elif can_skip2(i, pos, already, prev):
-            fo.write("0x00, 0xc0,   // rjmp    .+0 ; 2\n")
-            skip = True
+        elif can_skip3(i, pos, already, prev):
+            fo.write("0x24, 0x91,   // nop3 (lpm r18, Z)\n")
             cmdno += 1
-        #elif prev == i[pos]:
+            skip = 2
+        elif can_skip2(i, pos, already, prev):
+            fo.write("0x00, 0xc0,   // nop2 (rjmp .+0)\n")
+            skip = 1
+            cmdno += 1
+        elif prev == i[pos]:
         #    fo.write("0x00, 0x00,   // nop\n")
-        #    fo.write("0x20, 0x50,   // subi    r18, 0x00\n")
+            fo.write("0x20, 0x50,   // nop1 (subi r18, 0x00) \n")
+            cmdno += 1
         elif i[pos] in '._':
             fo.write("0x88, 0xb9,   // out 0x08, r24\n")
             cmdno += 1
@@ -151,16 +161,6 @@ fo.write("""
 """)
 cmdno+=1
 
-fo.write('// total commands:' + str(cmdno))
-
-fo.write("""
-const char font_space_index = %d;
-""" % lito[line_index['_______']])
-
-fo.write("""
-const char font_cursor_index = %d;
-""" % lito[line_index['YYYYYY_']])
-
 fo.write("""
 __attribute__ ((aligned (256))) char font_chars[]  = {
 """)
@@ -182,6 +182,17 @@ for j in xrange(5):
 fo.write("""
 };
 """)
+
+fo.write('// total commands:' + str(cmdno))
+
+fo.write("""
+const char font_space_index = %d;
+""" % lito[line_index['_______']])
+
+fo.write("""
+const char font_cursor_index = %d;
+""" % lito[line_index['YYYYYY_']])
+
 
 fo.close()
 
