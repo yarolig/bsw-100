@@ -1,17 +1,23 @@
-#	Reconstructed via infocmp from file: /lib/terminfo/m/mach
 bsw100,
-	am, cols#40, lines#29,
-	clear=\E[J\E[0000000000000000000000000000000000000000000000000000000000000000000000000000000000000H, cr=^M,
-	cub1=\E[D, cud1=\E[B,
-	cuf1=\E[C, cup=\E[%i%p1%d;%p2%dH,
-	cuu1=\E[A,
-	home=\E[H, kcub1=\E[D, kcud1=\E[B, kcuf1=\E[C, kcuu1=\E[A,
-    knp=\E[6~,
-    kpp=\E[5~,
-    kich1=\E[2~,
-    kdch1=\E[3~,
-	kend=\E[F,
-    kf1=\E[1F,
+# auto margin - cursor moves to next line when right margin reached
+	am,
+    cols#40, lines#29,
+	clear=\E[J\E[0000000000000000000000000000000000000000000000000000000000000000000000000000000000000H,
+    cr=^M,
+# cursor movement
+	cub1=\E[D,   cud1=\E[B,  cuf1=\E[C , cuu1=\E[A,
+# arrow keys
+    kcub1=\E[D, kcud1=\E[B, kcuf1=\E[C, kcuu1=\E[A,
+# cursor movement
+    cup=\E[%i%p1%d;%p2%dH, home=\E[H, 
+# home, end
+    khome=\E[H,  kend=\E[F,
+# page down, page up
+    knp=\E[6~,   kpp=\E[5~,
+# insert, delete
+    kich1=\E[2~, kdch1=\E[3~, 
+# sane and lazy F1..12 keys definition
+    kf1=\E[1F, 
     kf2=\E[2F,
     kf3=\E[3F,
     kf4=\E[4F,
@@ -23,4 +29,3 @@ bsw100,
     kf10=\E[:F,
     kf11=\E[;F,
     kf12=\E[<F,
-    khome=\E[H,

@@ -69,6 +69,7 @@ u8 getbuf() {
 #define TS_CSI2 3
 #define TS_VT52_Y1 4
 #define TS_VT52_Y2 5
+#define TS_DEC_PRIVATE 6
 
 
 unsigned char screen_scanline[console_width + 1];
@@ -365,7 +366,7 @@ static INLINE void term_handle_ch_csi(u8 ch) {
         for (u8 a=1;a<console_height;a++) {
             console[a*console_width] = 0;
         }
-    } else if (ch == 'A') {        // vt100 cuu, cursor_up
+    } else if (ch == 'A') { // vt100 cuu, cursor_up
         increase_row(console_cursor_row);
     } else if (ch == 'B') { // vt100 cud, cursor_down
         decrease_row(console_cursor_row);
@@ -377,6 +378,8 @@ static INLINE void term_handle_ch_csi(u8 ch) {
         if (console_cursor_col!=0) {
             console_cursor_col--;
         }
+    } else if (ch == '?') {
+        term_status = TS_DEC_PRIVATE;
     }
     term_csi1 = 0;
     term_csi2 = 0;
@@ -400,14 +403,14 @@ static INLINE void term_handle_ch(u8 ch){
         if (ch==';') {
             term_status = TS_CSI2;
         } else if ('0' <= ch && ch <= '9') {
-            term_csi1 += term_csi1*10 + ch - '0';
+            term_csi1 = term_csi1*10 + ch - '0';
         } else {
             term_handle_ch_csi(ch);
             term_status = TS_NORMAL;
         }
     } else if (term_status == TS_CSI2) {
         if ('0' <= ch && ch <= '9') {
-            term_csi2 += term_csi2*10 + ch - '0';
+            term_csi2 = term_csi2*10 + ch - '0';
         } else {
             term_handle_ch_csi(ch);
             term_status = TS_NORMAL;
@@ -419,9 +422,14 @@ static INLINE void term_handle_ch(u8 ch){
         term_csi2 = ch - ' ';
         term_handle_ch_csi('H');
         term_status = TS_NORMAL;
+    } else if (term_status == TS_DEC_PRIVATE) {
+        if (ch==';') {
+        } else if ('0' <= ch && ch <= '9') {
+        } else {
+            term_status = TS_NORMAL;
+        }
     }
 }
-
 
 
 static INLINE void process_uart() {
