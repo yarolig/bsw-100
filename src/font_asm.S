@@ -22,7 +22,8 @@ debug_scanlines:
 
 draw_screen_scanline:
     LDI r24, 0x00 ; r24 = background
-    LDI r25, 0xff ; r24 = foreground
+    LDI r25, 0xff ; r25 = foreground
+    LDI r23, 0x1 ; r23 = highlight
 
     ;LDI r24, 0x12
     LDI XL, lo8(screen_scanline)

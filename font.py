@@ -21,7 +21,7 @@ def add_line(line, char):
     if line in line_dict:
         line_dict[line] += 1
         return
-    if 'XXX' not in line and '___' not in line:
+    if 'YYY' not in line and 'XXX' not in line and '___' not in line:
         print '; bad line', line, 'for char', char
     if len(line) != len('.......'):
         print '; bad line len ', line, 'for char', char
@@ -75,9 +75,17 @@ def can_ld(line, pos, already, prev):
         return True
 
 
-def line_index_to_offset(li):
-    return 4+li * 7
+def can_skip2(line, pos, already, prev):
+    if prev != line[pos]:
+        return False
+    if pos + 1 >= len(line):
+        return False
+    if line[pos] == line[pos+1]:
+        return True
 
+lito = {}
+def line_index_to_offset(li):
+    return lito[li] #4+li * 7
 
 fo = open(sys.argv[2], 'w')
 fo.write("""
@@ -87,16 +95,17 @@ fo.write("""
 #include <avr/pgmspace.h>
 __attribute__ ((aligned (512))) PROGMEM const char font_char_scanlines[]  = {
 0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
 """)
 
 
 n = 0
 line_index = {}
+cmdno = 1
+
 for i in ii:
+    print 'i=',i
     line_index[i] = n
+    lito[n] = cmdno
     fo.write('// ' +str(n)+ ' ' +str(i) + ' addr:' + hex(0x600+line_index_to_offset(n)) + '\n')
     already = False
     prev = '?'
@@ -108,30 +117,50 @@ for i in ii:
             already = True
             skip = True
             fo.write("0xed, 0x91,   // ld r30, X+\n")
+            cmdno += 1
+        #elif can_skip3(i, pos, already, prev):
+        #    fo.write("0x24, 0x91,   // lpm     r18, Z ; 3")
+        elif can_skip2(i, pos, already, prev):
+            fo.write("0x00, 0xc0,   // rjmp    .+0 ; 2\n")
+            skip = True
+            cmdno += 1
         #elif prev == i[pos]:
         #    fo.write("0x00, 0x00,   // nop\n")
+        #    fo.write("0x20, 0x50,   // subi    r18, 0x00\n")
         elif i[pos] in '._':
             fo.write("0x88, 0xb9,   // out 0x08, r24\n")
+            cmdno += 1
         elif 'X' == i[pos]:
             fo.write("0x98, 0xb9,   // out 0x08, r25\n")
+            cmdno += 1
+        elif 'Y' == i[pos]:
+            fo.write("0x78, 0xb9,   // out 0x08, r23\n")
+            cmdno += 1
         else:
             print '; bad symbol'
         prev = i[pos]
     if not already:
         print '; bad place for LD'
     fo.write("0x09, 0x94,  // ijmp\n")
+    cmdno += 1
     n += 1
 
 fo.write("""
 0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
-0x08, 0x95,   // ret
 };
 """)
+cmdno+=1
+
+fo.write('// total commands:' + str(cmdno))
+
+fo.write("""
+const char font_space_index = %d;
+""" % lito[line_index['_______']])
+
+fo.write("""
+const char font_cursor_index = %d;
+""" % lito[line_index['YYYYYY_']])
+
 fo.write("""
 __attribute__ ((aligned (256))) char font_chars[]  = {
 """)

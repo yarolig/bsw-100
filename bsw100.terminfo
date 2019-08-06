@@ -2,6 +2,7 @@ bsw100,
 # auto margin - cursor moves to next line when right margin reached
 	am,
     cols#40, lines#29,
+    colors#8,
 	clear=\E[J\E[0000000000000000000000000000000000000000000000000000000000000000000000000000000000000H,
     cr=^M,
 # cursor movement
@@ -29,3 +30,8 @@ bsw100,
     kf10=\E[:F,
     kf11=\E[;F,
     kf12=\E[<F,
+# reverse mode
+    rev=\E[47m, 
+# normal mode
+    sgr0=\E[0m,
+

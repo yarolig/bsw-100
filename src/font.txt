@@ -888,27 +888,9 @@ _XXXX__
 _______
 
 ;  127 
-__X____
-XXXXX__
-XXXXX__
-X______
-XXXXX__
+YYYYYY_
+YYYYYY_
+YYYYYY_
+YYYYYY_
+YYYYYY_
 
-; 0 XXXXXX_ 35
-; 1 XXXXX__ 30
-; 2 XXXX_X_ 2
-; 3 XX_XXX_ 4
-; 4 XX___X_ 4
-; 5 X_XXXX_ 3
-; 6 X__XXX_ 11
-; 7 X____X_ 91
-; 8 X______ 48
-; 9 _XXXXX_ 15
-; 10 _XXXX__ 41
-; 11 _XX____ 16
-; 12 _X___X_ 1
-; 13 __XXX__ 7
-; 14 __X____ 62
-; 15 ___X___ 12
-; 16 _____X_ 36
-; 17 _______ 222

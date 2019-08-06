@@ -46,6 +46,7 @@ u8 uart_received;
 u8 console_cursor_row, console_cursor_col;
 u8 console_top_row;
 u8 term_status, term_csi1, term_csi2;
+u8 background;
 u8 tx_buf[8];
 u8 tx_buf_start, tx_buf_end;
 
@@ -292,6 +293,9 @@ static INLINE void term_handle_ch_normal(u8 ch){
         // Ignore it
         return;
     }
+    if (ch == ' ' && background) {
+        ch = 127;
+    }
     //if (ch >= 128) {
     //    // Non-ANSI characters, ignore it
     //    return;
@@ -378,6 +382,13 @@ static INLINE void term_handle_ch_csi(u8 ch) {
         if (console_cursor_col!=0) {
             console_cursor_col--;
         }
+    } else if (ch == 'm') {
+        if (40 <= term_csi1 && term_csi1 < 49 ) {
+            background = 1;
+        } else if (term_csi1 == 0) {
+            background = 0;
+        }
+
     } else if (ch == '?') {
         term_status = TS_DEC_PRIVATE;
     }
@@ -473,8 +484,8 @@ static INLINE void prepare_scanline() {
              console_cursor_row + console_height == current_console_row_no + console_top_row
             )
         ) {
-            clear_console_line(screen_scanline, 123);
-            screen_scanline[console_cursor_col] = 67;
+            clear_console_line(screen_scanline, font_space_index);
+            screen_scanline[console_cursor_col] = font_cursor_index;
             screen_scanline[console_cursor_col+1] = 0;
         } else if (current_char_row == 6) {
             // Apply delayed screen clearing
