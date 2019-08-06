@@ -16,11 +16,12 @@ See LICENSE.txt for details.
  - VGA output
  - PS/2 keyboard
  - Serial interface that can be connected to router or PC
- - BackSpace Works!
- - TODO: arrow keys, F1-F12, Home/End, NumLock
- - TODO: terminfo entry or shell script to configure terminal
- - TODO: It is still dumb terminal, vim or mc will not work with it
- - TODO: understand Escape-sequences that should be invisible
+ - BackSpace Works! Arrow keys, F1-F12, Home/End too.
+ - Terminfo entry
+ - vim works!
+ - TODO: mc, alsamixer, less, aptitude, nethack, emacs, info, nano
+ - TODO: NumLock, CapsLock, Shift+Function keys, Ctrl+[, Alt+X
+ - TODO: highlight text to make mc usable
 
 ## Misfeatures
  - Terrible font
@@ -55,6 +56,11 @@ or just:
 Launch:
 
     sudo setsid /sbin/getty -L 57600 ttyUSB0 dumb
+
+## Instlling terminfo
+This command writes terminal description to ~/.terminfo/
+
+    tic bsw100.terminfo
 
 ## Using as a console for router
 Break you router apart, locate UART interface, solder some wires and connect
