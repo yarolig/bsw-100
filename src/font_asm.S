@@ -52,19 +52,23 @@ draw_screen_scanline:
 
 ; r27:r26 - X
 ; r31:r30 - Z
+#define rX r26
+#define rY r28
+#define rZ r30
+
 prepare_screen_scanline:
     ; r24, r25 console_line  X
     ; r23, r22 font_line     Y
     ; r21, r20 scanline      Z
     push YL
     push YH
-    movw X, r24
-    movw Y, r22
-    movw Z, r20
+    movw rX, r24
+    movw rY, r22
+    movw rZ, r20
     ; LDI r20, console_width
 .macro loop_body
     LD rChar, X+       ; 2
-    movw Y, r22        ; 1
+    movw rY, r22        ; 1
     add  YL, rChar     ; 1
                        ; 0
     LD rChar, Y        ; 2
@@ -125,7 +129,7 @@ loop:
 clear_console_line:
     ; r24, r25 console_line  X
     ; r22? VALUE
-    movw X, r24
+    movw rX, r24
     ST X+, r22 ;0
     ST X+, r22 ;1
     ST X+, r22 ;2
