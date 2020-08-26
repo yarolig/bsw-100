@@ -1,3 +1,4 @@
+set -e
 SRC="src/main.cpp src/font.c src/font_asm.S src/scancodes.cpp"
 
 mkdir -p out

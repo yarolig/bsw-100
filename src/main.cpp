@@ -2,6 +2,8 @@
 #define F_CPU (16000000)
 #endif
 
+#define BSW113
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,6 +21,8 @@
 
 typedef NanoD3_PD3_INT1_OC2B VsyncPin; // yellow
 typedef NanoD9_PB1_OC1A      HSyncPin; // violet
+
+typedef NanoD7_PD7_AIN1 Bsw113Select;
 
 #define console_width 40
 #define console_height 29
@@ -49,6 +53,10 @@ u8 term_status, term_csi1, term_csi2;
 u8 background;
 u8 tx_buf[8];
 u8 tx_buf_start, tx_buf_end;
+
+static INLINE bool is_bsw113() {
+    return Bsw113Select::isHigh();
+}
 
 void addbuf(u8 ch) {
     tx_buf[tx_buf_end++] = ch;
@@ -86,8 +94,18 @@ bool kb_prev_up, kb_prev_ext;
 bool kb_shifted, kb_ctrled;
 
 INLINE void kb_error(u8 code) { }
-
+static INLINE void term_handle_ch_normal(u8 ch);
 INLINE void kb_new_byte() {
+    /*
+    u8 xx;
+    xx = kb_last_byte / 16;
+    term_handle_ch_normal(((xx < 10) ? '0' : 'a' - 10) + xx);
+    xx = (kb_last_byte % 16);
+    term_handle_ch_normal(((xx < 10) ? '0' : 'a' - 10) + xx);
+    term_handle_ch_normal(' ');
+    return;
+    */
+
     if (kb_last_byte==0xf0) {
         kb_prev_up = 1;
     } else if (kb_last_byte==0xe0) {
@@ -226,15 +244,34 @@ void spi_init(){
            0;
     SPDR = 0xff;
 }
+u16 spi_reset_counter;
 
 void spi_update() {
     if (SPSR & _BV(SPIF)) {
         u8 ch = SPDR;
         SPDR = 0xff;
-        for (u8 a=0;a<8;a++) {
-            u8 bit = (ch & 128) ? 1 : 0;
-            kb_new_bit(bit);
-            ch *= 2;
+
+        if (!is_bsw113()) {
+            for (u8 a=0;a<8;a++) {
+                u8 bit = (ch & 128) ? 1 : 0;
+                kb_new_bit(bit);
+                ch *= 2;
+            }
+        } else {
+            kb_last_byte = ch;
+            kb_new_byte();
+        }
+    }
+
+    if (is_bsw113()) {
+        if (NanoD13_PB5_SCK::isHigh() && NanoD11_PB3_OC2A_MOSI::isLow()) {
+            spi_reset_counter++;
+            if (spi_reset_counter==1000) {
+                spi_init();
+                term_handle_ch_normal('*');
+            }
+        } else {
+            spi_reset_counter = 0;
         }
     }
 }
@@ -573,6 +610,7 @@ int main (void) {
     load_banner();
     USART_InitBAUD(57600);
 
+    Bsw113Select::setInputWithoutPullUp();
     NanoD5_PD5_T1_OCO0B::setOutput();
     NanoD9_PB1_OC1A::setOutput();
     NanoD3_PD3_INT1_OC2B::setOutput();
