@@ -58,13 +58,13 @@ prepare_screen_scanline:
     ; r21, r20 scanline      Z
     push YL
     push YH
-    movw X, r24
-    movw Y, r22
-    movw Z, r20
+    movw r26, r24
+    movw r28, r22
+    movw r30, r20
     ; LDI r20, console_width
 .macro loop_body
     LD rChar, X+       ; 2
-    movw Y, r22        ; 1
+    movw r28, r22        ; 1
     add  YL, rChar     ; 1
                        ; 0
     LD rChar, Y        ; 2
@@ -74,46 +74,53 @@ prepare_screen_scanline:
 .endm
 
 loop:
-    loop_body ;0
-    loop_body ;1
-    loop_body ;2
-    loop_body ;3
-    loop_body ;4
-    loop_body ;5
-    loop_body ;6
-    loop_body ;7
-    loop_body ;8
-    loop_body ;9
-    loop_body ;10
-    loop_body ;11
-    loop_body ;12
-    loop_body ;13
-    loop_body ;14
-    loop_body ;15
-    loop_body ;16
-    loop_body ;17
-    loop_body ;18
-    loop_body ;19
-    loop_body ;20
-    loop_body ;21
-    loop_body ;22
-    loop_body ;23
-    loop_body ;24
-    loop_body ;25
-    loop_body ;26
-    loop_body ;27
-    loop_body ;28
-    loop_body ;29
-    loop_body ;30
-    loop_body ;31
-    loop_body ;32
-    loop_body ;33
-    loop_body ;34
-    loop_body ;35
-    loop_body ;36
-    loop_body ;37
-    loop_body ;38
-    loop_body ;39
+    LD rChar, X+       ; 2
+    movw r28, r22        ; 1
+    add  YL, rChar     ; 1
+                       ; 0
+    LD rChar, Y        ; 2
+    ST Z+, rChar       ; 2
+    ; SUBI r20, 1      ; 0
+                       ; 8 Total
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
+    loop_body
     ;BRNE loop          ; 2
 
     LDI rChar, 0
@@ -125,7 +132,7 @@ loop:
 clear_console_line:
     ; r24, r25 console_line  X
     ; r22? VALUE
-    movw X, r24
+    movw r26, r24
     ST X+, r22 ;0
     ST X+, r22 ;1
     ST X+, r22 ;2
