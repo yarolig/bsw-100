@@ -22,7 +22,6 @@
 typedef NanoD3_PD3_INT1_OC2B VsyncPin; // yellow
 typedef NanoD9_PB1_OC1A      HSyncPin; // violet
 
-typedef NanoD7_PD7_AIN1 Bsw113Select;
 
 #define console_width 40
 #define console_height 29
@@ -55,7 +54,7 @@ u8 tx_buf[8];
 u8 tx_buf_start, tx_buf_end;
 
 static INLINE bool is_bsw113() {
-    return Bsw113Select::isHigh();
+    return true;
 }
 
 void addbuf(u8 ch) {
@@ -267,8 +266,8 @@ void spi_update() {
         if (NanoD13_PB5_SCK::isHigh() && NanoD11_PB3_OC2A_MOSI::isLow()) {
             spi_reset_counter++;
             if (spi_reset_counter==1000) {
-                spi_init();
                 term_handle_ch_normal('*');
+                spi_init();
             }
         } else {
             spi_reset_counter = 0;
@@ -339,7 +338,7 @@ static INLINE void term_handle_ch_normal(u8 ch){
     //}
     console[console_cursor_row*console_width+console_cursor_col] = ch;
     console_cursor_col++;
-    if (console_cursor_col==console_width){
+    if (console_cursor_col>=console_width){
         console_cursor_col=0;
         term_handle_ch_normal('\n');
     }
@@ -377,7 +376,7 @@ static INLINE void term_handle_ch_escape(u8 ch) {
     } else if (ch == 'B') { // vt52 cud, cursor_down
         decrease_row(console_cursor_row);
     } else if (ch == 'C') { // vt52 cuf, cursor_right
-        if (console_cursor_col!=console_width) {
+        if (console_cursor_col<console_width-1) {
             console_cursor_col++;
         }
     } else if (ch == 'D') { // vt52 cub, cursor_left
@@ -399,7 +398,7 @@ static INLINE void term_handle_ch_csi(u8 ch) {
 
         console_cursor_row = (console_cursor_row + console_top_row) % console_height;
 
-        if (console_cursor_col>console_width) {
+        if (console_cursor_col>=console_width) {
             console_cursor_col = console_width - 1;
         }
     } else if (ch == 'J') {
@@ -412,7 +411,7 @@ static INLINE void term_handle_ch_csi(u8 ch) {
     } else if (ch == 'B') { // vt100 cud, cursor_down
         decrease_row(console_cursor_row);
     } else if (ch == 'C') { // vt100 cuf, cursor_right
-        if (console_cursor_col!=console_width) {
+        if (console_cursor_col<console_width-1) {
             console_cursor_col++;
         }
     } else if (ch == 'D') { // vt100 cub, cursor_left
@@ -609,8 +608,6 @@ void load_banner() {
 int main (void) {
     load_banner();
     USART_InitBAUD(57600);
-
-    Bsw113Select::setInputWithoutPullUp();
     NanoD5_PD5_T1_OCO0B::setOutput();
     NanoD9_PB1_OC1A::setOutput();
     NanoD3_PD3_INT1_OC2B::setOutput();
