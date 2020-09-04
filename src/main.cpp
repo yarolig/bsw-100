@@ -166,8 +166,29 @@ INLINE void kb_new_byte() {
                             options.print_unknown_keys = !options.print_unknown_keys;
                         } else if (sc == BSW_MENU) {
                             options.local_mode = !options.local_mode;
+                            if (options.local_mode) {
+                                term_handle_ch_normal('\r');
+                                term_handle_ch_normal('\n');
+                                term_handle_ch_normal('L');
+                                term_handle_ch_normal('o');
+                                term_handle_ch_normal('c');
+                                term_handle_ch_normal('a');
+                                term_handle_ch_normal('l');
+                                term_handle_ch_normal(':');
+                                term_handle_ch_normal(' ');
+                            }
                         } else if (sc == BSW_WINKEYR) {
                             options.print_all_keys = !options.print_all_keys;
+                            if (options.print_all_keys) {
+                                term_handle_ch_normal('\r');
+                                term_handle_ch_normal('\n');
+                                term_handle_ch_normal('K');
+                                term_handle_ch_normal('e');
+                                term_handle_ch_normal('y');
+                                term_handle_ch_normal('s');
+                                term_handle_ch_normal(':');
+                                term_handle_ch_normal(' ');
+                            }
                         }
                     } else if ( kb_prev_ext && '.' <= sc && sc <= '9') {
                         if (sc == '8') {
@@ -517,14 +538,6 @@ static INLINE void term_handle_ch(u8 ch){
 
 
 static INLINE void process_uart() {
-    if (uart_received) {
-        u8 ch = uart_received;
-        term_handle_ch(ch);
-        if (ch=='\n') {
-            term_handle_ch('\r');
-        }
-        uart_received = 0;
-    }
     if (USART_CanWrite()){
         u8 gb = getbuf();
         if (gb) {
@@ -546,12 +559,6 @@ static INLINE void process_uart() {
                 term_handle_ch('\r');
             }
         }
-    }
-}
-
-static INLINE void preprocess_uart() {
-    if (USART_CanRead()) {
-        uart_received = USART_Receive();
     }
 }
 
@@ -607,7 +614,6 @@ static INLINE void prepare_scanline() {
 
 
 static INLINE void on_timer1(){
-
     PORTC = 0x0;
     line++;
     if (line==481+VIDEO_START_LINE) {
@@ -622,9 +628,6 @@ static INLINE void on_timer1(){
         //PORTC = line % 0x100 / 32;
         if (line % 2 == 1) {
             draw_screen_scanline();
-            if (current_char_row == 2){
-                preprocess_uart();
-            }
         } else if (line % 2 == 0) {
             current_screen_row = ((line-32) / 2);
             prepare_scanline();
@@ -632,56 +635,19 @@ static INLINE void on_timer1(){
         PORTC = 0x00;
         return;
     } else {
-        spi_update();
-        process_uart();
-        process_uart();
         PORTC = 0x00;
     }
 }
 
 ISR(TIMER1_OVF_vect) {
-    /*switch(TCNT2 % 4) {
-    case 0: __asm__("nop\n");
-    case 1: __asm__("nop\n");
-    case 2: __asm__("nop\n");
-    case 3: __asm__("nop\n");
-    }*/
-
-    /*
-    __asm__(
-    "lds     r24, 0x84\n"
-    "andi    r24, 0x03\n"
-                                              //     0   1   2   3
-    "cpi r24, 3 ; 1\n"                        //     1   1   1                               //
-    "breq waste3 ; false = 1, true = 2    \n" //     3   2   2                                           //
-                                              //                                                                    // //
-    "cpi r24, 2 ; 1\n"                        //         3   3                                                                          //   //
-    "breq waste2 ; false = 1, true = 2    \n" //         5   4                                         //
-                                              //                                                                    // //
-    "cpi r24, 1 ; 1\n"                        //             5                                                                            // //
-    "breq waste1 ; false = 1, true = 2    \n" //             7                                         //
-                                              //                                                                    // //
-    "cpi r24, 0 ; 1\n"                        //
-    "breq waste0 ; false = 1, true = 2\n"     //                                                   //
-                                              //                                           //         //                          //
-    "waste3: nop\n"                           //     4                     //
-    "waste2: nop\n"                           //     5   6                //
-    "waste1: nop\n"                           //     6   7   8            //
-    "waste0: nop\n"                           //     7   8   9            //
-    );
-*/
     sync_to_timer1();
-    //GPIOR2 = TCNT2;
-    GPIOR1 = TCNT1/2;
-    /*
-    if (TCNT2%2==0) {
-        __asm__("rjmp    .+2\n");
-    } else {
-        __asm__("nop\n");
-        // __asm__("nop\n");
-    }
-    */
+    GPIOR1 = TCNT1;
     on_timer1();
+}
+
+void update() {
+    process_uart();
+    spi_update();
 }
 
 
@@ -825,8 +791,8 @@ static INLINE void load_banner() {
 }
 
 int main (void) {
-    options.local_mode=1;
-    options.print_unknown_keys=1;
+    // options.local_mode=1;
+    // options.print_unknown_keys=1;
     GPIOR0 = 2;
     GPIOR1 = 3;
 
@@ -865,6 +831,7 @@ int main (void) {
         if (options.settings_mode) {
             draw_settings();
         }
+        update();
         //__asm__ volatile( "" ::: "memory" );
         //sleep_cpu();
     }
