@@ -105,7 +105,7 @@ const u8 PROGMEM scancodes[] = {
     'a', // 0x1c
     'w', // 0x1d
     '2', // 0x1e
-    '?', // 0x1f
+    BSW_WINKEYL, // 0x1f // Extended!
     '?', // 0x20
     'c', // 0x21
     'x', // 0x22
@@ -113,7 +113,7 @@ const u8 PROGMEM scancodes[] = {
     'e', // 0x24
     '4', // 0x25
     '3', // 0x26
-    '?', // 0x27
+    BSW_WINKEYR, // 0x27
     '?', // 0x28
     ' ', // 0x29
     'v', // 0x2a
@@ -121,7 +121,7 @@ const u8 PROGMEM scancodes[] = {
     't', // 0x2c
     'r', // 0x2d
     '5', // 0x2e
-    '?', // 0x2f
+    BSW_MENU, // 0x2f
     '?', // 0x30
     'n', // 0x31
     'b', // 0x32
@@ -162,7 +162,7 @@ const u8 PROGMEM scancodes[] = {
     '=', // 0x55
     '?', // 0x56
     '?', // 0x57
-    '?', // 0x58
+    BSW_CAPSLOCK, // 0x58
     '?', // 0x59
     '\n', // 0x5a // Enter
     ']', // 0x5b
@@ -193,14 +193,14 @@ const u8 PROGMEM scancodes[] = {
     '6', // 0x74 // numpad
     '8', // 0x75 // numpad
     '\e', // 0x76
-    '?', // 0x77
+    BSW_NUMLOCK, // 0x77
     BSW_F11, // 0x78
     '+', // 0x79 // numpad
     '3', // 0x7a  // numpad
     '-', // 0x7b // numpad
     '*', // 0x7c // numpad
     '9', // 0x7d // numpad
-    '?', // 0x7e
+    BSW_SCROLLLOCK, // 0x7e
     '?', // 0x7f
     '?', // 0x80
     '?', // 0x81
@@ -363,7 +363,7 @@ const u8 PROGMEM scancodes[] = {
     'A', // 0x1c
     'W', // 0x1d
     '@', // 0x1e
-    '?', // 0x1f
+    BSW_WINKEYL, // 0x1f
     '?', // 0x20
     'C', // 0x21
     'X', // 0x22
@@ -371,7 +371,7 @@ const u8 PROGMEM scancodes[] = {
     'E', // 0x24
     '$', // 0x25
     '#', // 0x26
-    '?', // 0x27
+    BSW_WINKEYR, // 0x27
     '?', // 0x28
     ' ', // 0x29
     'V', // 0x2a
@@ -379,7 +379,7 @@ const u8 PROGMEM scancodes[] = {
     'T', // 0x2c
     'R', // 0x2d
     '%', // 0x2e
-    '?', // 0x2f
+    BSW_MENU, // 0x2f
     '?', // 0x30
     'N', // 0x31
     'B', // 0x32
@@ -420,7 +420,7 @@ const u8 PROGMEM scancodes[] = {
     '+', // 0x55
     '?', // 0x56
     '?', // 0x57
-    '?', // 0x58
+    BSW_CAPSLOCK, // 0x58 shifted
     '?', // 0x59
     '\n', // 0x5a // Shift-Enter
     '}', // 0x5b
@@ -451,14 +451,14 @@ const u8 PROGMEM scancodes[] = {
     '?', // 0x74
     '?', // 0x75
     '\e', // 0x76
-    '?', // 0x77
+    BSW_NUMLOCK, // 0x77 //shifted
     '?', // 0x78
     '+', // 0x79
     '?', // 0x7a
     '-', // 0x7b
     '*', // 0x7c
     '?', // 0x7d
-    '?', // 0x7e
+    BSW_SCROLLLOCK, // 0x7e // shifted
     '?', // 0x7f
     '?', // 0x80
     '?', // 0x81

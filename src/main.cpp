@@ -19,6 +19,7 @@
 #include "font.h"
 #include "scancodes.h"
 
+#include "sync.h"
 typedef NanoD3_PD3_INT1_OC2B VsyncPin; // yellow
 typedef NanoD9_PB1_OC1A      HSyncPin; // violet
 
@@ -28,8 +29,14 @@ typedef NanoD9_PB1_OC1A      HSyncPin; // violet
 #define VIDEO_START_CLK (540-486)
 #define VIDEO_START_LINE (497-484)
 
+
+const u8 PROGMEM banner100[] =
+"\n              BSW-100                   ";
+const u8 PROGMEM banner113[] =
+"\n              BSW-113                   ";
+
 const u8 PROGMEM banner[] =
-"              BSW-100                   "
+// "              BSW-100                   "
 "========================================"
 "=                                      ="
 "= ABCDEFGHIJKLMNOPQRSTUVWXYZ           ="
@@ -41,17 +48,28 @@ const u8 PROGMEM banner[] =
 ;
 
 
-u16 line = 0;
-u8 current_screen_row;
-u8 current_char_row;
 // u8 kb_received;
 u8 uart_received;
 u8 console_cursor_row, console_cursor_col;
 u8 console_top_row;
 u8 term_status, term_csi1, term_csi2;
 u8 background;
-u8 tx_buf[8];
+#define tx_buf_len 16
+u8 tx_buf[tx_buf_len];
 u8 tx_buf_start, tx_buf_end;
+struct Options
+{
+    u8 local_mode:1;
+    u8 settings_mode:1;
+    u8 print_unknown_keys:1;
+    u8 print_all_keys:1;
+} volatile options;
+
+
+u16 line = 0;
+u8 current_screen_row;
+u8 current_char_row;
+volatile u8 settings_pos;
 
 static INLINE bool is_bsw113() {
     return true;
@@ -59,7 +77,7 @@ static INLINE bool is_bsw113() {
 
 void addbuf(u8 ch) {
     tx_buf[tx_buf_end++] = ch;
-    tx_buf_end = tx_buf_end % 8;
+    tx_buf_end = tx_buf_end % tx_buf_len;
 }
 
 u8 getbuf() {
@@ -67,7 +85,7 @@ u8 getbuf() {
         return 0;
     }
     u8 res = tx_buf[tx_buf_start++];
-    tx_buf_start = tx_buf_start % 8;
+    tx_buf_start = tx_buf_start % tx_buf_len;
     return res;
 }
 
@@ -128,6 +146,7 @@ INLINE void kb_new_byte() {
             */
         } else {
             u8 sc;
+            bool unknown = false;
             sc = pgm_read_byte(&scancodes[kb_last_byte]);
             if (sc != '?') {
                 if (!kb_prev_up) {
@@ -138,10 +157,18 @@ INLINE void kb_new_byte() {
                         sc = sc + 1 - 'a';
                     }
                     if (sc & 128) {
+                        if (sc <= BSW_INSERT) {
                             addbuf('\e');
                             addbuf('[');
                             addbuf('0' + (sc - 128));
                             addbuf('F');
+                        } else if (sc == BSW_SCROLLLOCK) {
+                            options.print_unknown_keys = !options.print_unknown_keys;
+                        } else if (sc == BSW_MENU) {
+                            options.local_mode = !options.local_mode;
+                        } else if (sc == BSW_WINKEYR) {
+                            options.print_all_keys = !options.print_all_keys;
+                        }
                     } else if ( kb_prev_ext && '.' <= sc && sc <= '9') {
                         if (sc == '8') {
                             addbuf('\e'); addbuf('['); addbuf('A');
@@ -164,23 +191,33 @@ INLINE void kb_new_byte() {
                         } else if (sc == '/') { // Insert
                             addbuf('\e'); addbuf('['); addbuf('2'); addbuf('~');
                         }
+                    } else if ( kb_prev_ext && sc == '*') {
+                        // SysRq
+                        options.settings_mode = !options.settings_mode;
+                        options.local_mode = options.settings_mode;
+                        options.print_all_keys = 0;
+                        options.print_unknown_keys = 0;
+                        settings_pos = 0xff;
                     } else {
                         addbuf(sc);
                     }
                 }
-            } else {/*
-                if (prev_up) {
+            } else {
+                unknown = true;
+            }
+            if ((options.print_unknown_keys && unknown) || options.print_all_keys) {
+                if (kb_prev_up) {
                     addbuf('^');
                 }
-                if (prev_ext) {
+                if (kb_prev_ext) {
                     addbuf('X');
                 }
                 u8 xx;
-                xx = last_byte / 16;
+                xx = kb_last_byte / 16;
                 addbuf(((xx < 10) ? '0' : 'a' - 10) + xx);
-                xx = (last_byte % 16);
+                xx = (kb_last_byte % 16);
                 addbuf(((xx < 10) ? '0' : 'a' - 10) + xx);
-                addbuf(' ');*/
+                addbuf(' ');
             }
         }
         kb_prev_ext = 0;
@@ -292,7 +329,7 @@ static INLINE void decrease_row(u8& row) {
 }
 
 
-static INLINE void term_handle_ch_normal(u8 ch){
+static void term_handle_ch_normal(u8 ch){
     ch = ch & ~128;
     if (ch=='\r') {
         console_cursor_col = 0;
@@ -491,14 +528,23 @@ static INLINE void process_uart() {
     if (USART_CanWrite()){
         u8 gb = getbuf();
         if (gb) {
-            USART_Transmit(gb);
+            if (!options.local_mode) {
+                USART_Transmit(gb);
+            } else {
+                term_handle_ch(gb);
+                if (gb=='\n') {
+                    term_handle_ch('\r');
+                }
+            }
         }
     }
     if (USART_CanRead()) {
         u8 ch = USART_Receive();
-        term_handle_ch(ch);
-        if (ch=='\n') {
-            term_handle_ch('\r');
+        if (!options.local_mode) {
+            term_handle_ch(ch);
+            if (ch=='\n') {
+                term_handle_ch('\r');
+            }
         }
     }
 }
@@ -558,8 +604,11 @@ static INLINE void prepare_scanline() {
 #endif
 }
 
+
+
 static INLINE void on_timer1(){
-    PORTC = 0x00;
+
+    PORTC = 0x0;
     line++;
     if (line==481+VIDEO_START_LINE) {
         // vsync active
@@ -586,26 +635,203 @@ static INLINE void on_timer1(){
         spi_update();
         process_uart();
         process_uart();
+        PORTC = 0x00;
     }
 }
 
 ISR(TIMER1_OVF_vect) {
+    /*switch(TCNT2 % 4) {
+    case 0: __asm__("nop\n");
+    case 1: __asm__("nop\n");
+    case 2: __asm__("nop\n");
+    case 3: __asm__("nop\n");
+    }*/
+
+    /*
+    __asm__(
+    "lds     r24, 0x84\n"
+    "andi    r24, 0x03\n"
+                                              //     0   1   2   3
+    "cpi r24, 3 ; 1\n"                        //     1   1   1                               //
+    "breq waste3 ; false = 1, true = 2    \n" //     3   2   2                                           //
+                                              //                                                                    // //
+    "cpi r24, 2 ; 1\n"                        //         3   3                                                                          //   //
+    "breq waste2 ; false = 1, true = 2    \n" //         5   4                                         //
+                                              //                                                                    // //
+    "cpi r24, 1 ; 1\n"                        //             5                                                                            // //
+    "breq waste1 ; false = 1, true = 2    \n" //             7                                         //
+                                              //                                                                    // //
+    "cpi r24, 0 ; 1\n"                        //
+    "breq waste0 ; false = 1, true = 2\n"     //                                                   //
+                                              //                                           //         //                          //
+    "waste3: nop\n"                           //     4                     //
+    "waste2: nop\n"                           //     5   6                //
+    "waste1: nop\n"                           //     6   7   8            //
+    "waste0: nop\n"                           //     7   8   9            //
+    );
+*/
+    sync_to_timer1();
+    //GPIOR2 = TCNT2;
+    GPIOR1 = TCNT1/2;
+    /*
+    if (TCNT2%2==0) {
+        __asm__("rjmp    .+2\n");
+    } else {
+        __asm__("nop\n");
+        // __asm__("nop\n");
+    }
+    */
     on_timer1();
 }
 
-void load_banner() {
-    console_cursor_col = 0;
-    console_cursor_row = 8;
-    for (u16 a=0;;a++) {
-        u8 c = pgm_read_byte(&banner[a]);
-        if (c==0) {
-            break;
-        }
-        console[a] = c;
+
+const u8 PROGMEM settings_baud_P[] = "Baud rate: ";
+const u8 PROGMEM settings_text_color_P[] = "text color: ";
+const u8 PROGMEM settings_cursor_color_P[] = "cursor color: ";
+
+
+void clear_screen() {
+    clear_console_line(&console[0], ' ');
+    for (u8 a=1;a<console_height;a++) {
+        console[a*console_width] = 0;
     }
 }
 
+typedef void (*printch_t)(u8 c);
+
+static INLINE void printxf(u8 x, printch_t f) {
+    u8 xx;
+    xx = x / 16;
+    f(((xx < 10) ? '0' : 'a' - 10) + xx);
+    xx = (x % 16);
+    f(((xx < 10) ? '0' : 'a' - 10) + xx);
+}
+static INLINE void print_digitf(u8 d, printch_t f) {
+    f(((d < 10) ? '0' : 'a' - 10) + d);
+}
+static INLINE void print_u8f(u8 x, printch_t f) {
+    if (x >= 100) {
+        print_digitf(x / 100, f);
+    }
+    if (x >= 10) {
+        print_digitf(x / 10 % 10, f);
+    }
+    print_digitf(x % 10, f);
+}
+static INLINE void print_u16f(u16 x, printch_t f) {
+    if (x >= 10000) {
+        print_digitf(x / 10000 % 10, f);
+    }
+    if (x >= 1000) {
+        print_digitf(x / 1000 % 10, f);
+    }
+    if (x >= 100) {
+        print_digitf(x / 100 % 10, f);
+    }
+    if (x >= 10) {
+        print_digitf(x / 10 % 10, f);
+    }
+    print_digitf(x % 10, f);
+}
+
+static INLINE void print_u32f(u32 x, printch_t f) {
+    if (x==0) {
+        f('0');
+    } else {
+        for (u32 d=1000000000; d!=0; d /= 10)  {
+            if (x >= d) {
+                print_digitf(x / d % 10, f);
+            }
+        }
+    }
+}
+
+
+u16 read_ubrr() {
+    u16 ubrr;
+    ubrr = (UBRR0H << 8) | UBRR0L;
+    return ubrr;
+}
+
+u16 ubrr_to_baud(u16 ubrr) {
+    return u32(F_CPU/16)/(ubrr+1);
+}
+
+u16 baud_to_ubrr(u16 baud) {
+    return F_CPU/(u32(baud)*16) - 1;
+}
+
+void term_handle_string_P(const u8* str) {
+    for (;;) {
+        u8 c = pgm_read_byte(str);
+        if (c==0) {
+            break;
+        }
+        str++;
+        term_handle_ch_normal(c);
+    }
+}
+
+void draw_settings_line(u8 n, const u8* s, u16 value) {
+    term_handle_ch_normal(' ');
+    if (settings_pos==n) {
+        term_handle_ch_normal('>');
+    } else {
+        term_handle_ch_normal(' ');
+    }
+    term_handle_string_P(s);
+    term_handle_ch_normal(' ');
+    print_u16f(value, term_handle_ch_normal);
+    term_handle_ch_normal(' ');
+    term_handle_ch_normal(' ');
+    term_handle_ch_normal('\r');
+    term_handle_ch_normal('\n');
+}
+
+
+void draw_settings() {
+
+    if(settings_pos==0xff) {
+        clear_screen();
+        for(u8 a=0;a<100; a++) {
+            asm("nop\n");// sleep_cpu();
+        }
+        settings_pos = 0;
+    }
+        console_cursor_col = 0;
+        console_cursor_row = 2;
+
+        draw_settings_line(0, settings_baud_P, ubrr_to_baud(read_ubrr()));
+        draw_settings_line(1, (const u8*)PSTR("GPIOR0"), GPIOR0);
+        draw_settings_line(2, (const u8*)PSTR("GPIOR1"), GPIOR1);
+        draw_settings_line(3, (const u8*)PSTR("GPIOR2"), GPIOR2);
+
+        term_handle_string_P(banner);
+
+    console_cursor_col = 0;
+    console_cursor_row = 0;
+    //sleep_cpu();
+    //print_u16f(TCNT2, term_handle_ch_normal);
+}
+
+
+static INLINE void load_banner() {
+    if (is_bsw113()) {
+        term_handle_string_P(banner113);
+    } else {
+        term_handle_string_P(banner100);
+    }
+    term_handle_string_P(banner);
+}
+
 int main (void) {
+    options.local_mode=1;
+    options.print_unknown_keys=1;
+    GPIOR0 = 2;
+    GPIOR1 = 3;
+
+    TCCR2B = 1;
+
     load_banner();
     USART_InitBAUD(57600);
     NanoD5_PD5_T1_OCO0B::setOutput();
@@ -636,6 +862,10 @@ int main (void) {
     sei();
     sleep_enable();
     for (;;) {
-        sleep_cpu();
+        if (options.settings_mode) {
+            draw_settings();
+        }
+        //__asm__ volatile( "" ::: "memory" );
+        //sleep_cpu();
     }
 }

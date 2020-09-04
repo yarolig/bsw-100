@@ -27,4 +27,16 @@
 #define BSW_DELETE (128+21)
 #define BSW_INSERT (128+22)
 
+#define BSW_NUMLOCK (128+23)
+#define BSW_CAPSLOCK (128+24)
+#define BSW_SCROLLLOCK (128+25)
+
+#define BSW_MENU (128+26)
+#define BSW_WINKEYL (128+27)
+#define BSW_WINKEYR (128+28)
+#define BSW_SYSRQ (128+29)
+
+
+
+
 extern const u8 PROGMEM scancodes[];
