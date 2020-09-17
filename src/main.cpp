@@ -20,12 +20,11 @@
 #include "scancodes.h"
 
 #include "sync.h"
+#include "width.h"
+
 typedef NanoD3_PD3_INT1_OC2B VsyncPin; // yellow
 typedef NanoD9_PB1_OC1A      HSyncPin; // violet
 
-
-#define console_width 40
-#define console_height 29
 #define VIDEO_START_CLK (540-486)
 #define VIDEO_START_LINE (497-484)
 
@@ -109,6 +108,11 @@ bool kb_prev_clk, kb_prev_data;
 bool kb_parity;
 bool kb_prev_up, kb_prev_ext;
 bool kb_shifted, kb_ctrled;
+
+
+
+
+
 
 INLINE void kb_error(u8 code) { }
 static INLINE void term_handle_ch_normal(u8 ch);
@@ -606,16 +610,27 @@ static INLINE void prepare_scanline() {
 #else
 
     prepare_screen_scanline(&console[current_console_row_no*console_width],
-                            &font_chars[128 * current_char_row],
+                            &font_chars_P[128 * current_char_row],
                             screen_scanline);
 #endif
 }
 
-
-
 static INLINE void on_timer1(){
     PORTC = 0x0;
     line++;
+    if (32 <= line && line < 480+VIDEO_START_LINE) {
+        //PORTC = line % 0x100 / 32;
+        if (line % 2 == 0) {
+            current_screen_row = ((line-32) / 2);
+            prepare_scanline();
+        } else if (line % 2 == 1) {
+            draw_screen_scanline();
+        }
+        PORTC = 0x00;
+        return;
+    } else {
+        PORTC = 0x00;
+    }
     if (line==481+VIDEO_START_LINE) {
         // vsync active
         VsyncPin::setLow();
@@ -623,25 +638,11 @@ static INLINE void on_timer1(){
         line = 0;
         VsyncPin::setHigh();
     }
-
-    if (32 <= line && line < 480+VIDEO_START_LINE) {
-        //PORTC = line % 0x100 / 32;
-        if (line % 2 == 1) {
-            draw_screen_scanline();
-        } else if (line % 2 == 0) {
-            current_screen_row = ((line-32) / 2);
-            prepare_scanline();
-        }
-        PORTC = 0x00;
-        return;
-    } else {
-        PORTC = 0x00;
-    }
 }
 
 ISR(TIMER1_OVF_vect) {
     sync_to_timer1();
-    GPIOR1 = TCNT1;
+    //GPIOR1 = TCNT1;
     on_timer1();
 }
 

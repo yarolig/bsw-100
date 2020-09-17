@@ -162,11 +162,10 @@ fo.write("""
 cmdno+=1
 
 fo.write("""
-__attribute__ ((aligned (256))) char font_chars[]  = {
+__attribute__ ((aligned (256))) PROGMEM const char font_chars_P[]  = {
 """)
 
 n=0
-
 for j in xrange(5):
     fo.write('//--------------------------------------\n')
     for i in xrange(128):
@@ -182,6 +181,9 @@ for j in xrange(5):
 fo.write("""
 };
 """)
+
+
+
 
 fo.write('// total commands:' + str(cmdno))
 

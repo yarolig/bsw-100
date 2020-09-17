@@ -12,8 +12,8 @@ static INLINE void sync_to_timer1() {
     "lds     r24, 0x84\n" // TCNT1
     "andi    r24, 0x07\n"
                                                 //     0   1   2   3
-    "cpi r24, 7 ; 1\n"                          //     1   1   1   1
-    "breq waste7   ; false = 1, true = 2    \n" //     3   2   2   2
+//    "cpi r24, 7 ; 1\n"                          //     1   1   1   1
+//    "breq waste7   ; false = 1, true = 2    \n" //     3   2   2   2
                                                 //
     "cpi r24, 6 ; 1\n"                          //         3   3   3
     "breq waste6   ; false = 1, true = 2    \n" //         5   4   4

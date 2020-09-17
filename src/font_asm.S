@@ -26,6 +26,9 @@ draw_screen_scanline:
     ;LDI r25, 0xff ; r25 = foreground
     IN  r23, 0x1e  ; r23 = GPIOR0
     ; LDI r23, 0x1 ; r23 = highlight
+    NOP
+    NOP
+    NOP
 
     ;LDI r24, 0x12
     LDI XL, lo8(screen_scanline)
@@ -50,129 +53,59 @@ draw_screen_scanline:
 
 
 #define rChar r19
-#define rCharLine r0
+#define rCharLine r19
 
 ; r27:r26 - X
 ; r31:r30 - Z
+
+#define rXL r26
+#define rXH r27
+#define rYL r28
+#define rYH r29
+#define rZL r30
+#define rZH r31
+
+#define rconsole_lineL r24
+#define rconsole_lineH r25
+#define rfont_lineL r22
+#define rfont_lineH r23
+#define rscanlineL r20
+#define rscanlineH r21
+
 prepare_screen_scanline:
     ; r24, r25 console_line  X
-    ; r23, r22 font_line     Y
-    ; r21, r20 scanline      Z
+    ; r22, r23 font_line     Y
+    ; r20, r21 scanline      Z
     push YL
     push YH
-    movw r26, r24
-    movw r28, r22
-    movw r30, r20
-    ; LDI r20, console_width
+    movw rXL, rconsole_lineL
+    movw rZL, rfont_lineL
+    movw rYL, rscanlineL
+
 .macro loop_body
-    LD rChar, X+       ; 2
-    movw r28, r22        ; 1
-    add  YL, rChar     ; 1
-                       ; 0
-    LD rChar, Y        ; 2
-    ST Z+, rChar       ; 2
-    ; SUBI r20, 1      ; 0
-                       ; 8 Total
+    LD rChar, X+          ; 2
+    movw rZL, rfont_lineL ; 1
+    add  ZL, rChar        ; 1
+                          ; 0
+    LPM rCharLine, Z      ; 3   ; LD rCharLine, Z       ; 2
+    ST Y+, rCharLine      ; 2
+                          ; 9 Total
 .endm
 
-loop:
-    LD rChar, X+       ; 2
-    movw r28, r22        ; 1
-    add  YL, rChar     ; 1
-                       ; 0
-    LD rChar, Y        ; 2
-    ST Z+, rChar       ; 2
-    ; SUBI r20, 1      ; 0
-                       ; 8 Total
+.rept console_width
     loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    loop_body
-    ;BRNE loop          ; 2
-
+.endr
     LDI rChar, 0
-    ST Z+, rChar
+    ST Y+, rChar
     pop YH
     pop YL
     ret
 
 clear_console_line:
     ; r24, r25 console_line  X
-    ; r22? VALUE
-    movw r26, r24
-    ST X+, r22 ;0
-    ST X+, r22 ;1
-    ST X+, r22 ;2
-    ST X+, r22 ;3
-    ST X+, r22 ;4
-    ST X+, r22 ;5
-    ST X+, r22 ;6
-    ST X+, r22 ;7
-    ST X+, r22 ;8
-    ST X+, r22 ;9
-    ST X+, r22 ;10
-    ST X+, r22 ;11
-    ST X+, r22 ;12
-    ST X+, r22 ;13
-    ST X+, r22 ;14
-    ST X+, r22 ;15
-    ST X+, r22 ;16
-    ST X+, r22 ;17
-    ST X+, r22 ;18
-    ST X+, r22 ;19
-    ST X+, r22 ;20
-    ST X+, r22 ;21
-    ST X+, r22 ;22
-    ST X+, r22 ;23
-    ST X+, r22 ;24
-    ST X+, r22 ;25
-    ST X+, r22 ;26
-    ST X+, r22 ;27
-    ST X+, r22 ;28
-    ST X+, r22 ;29
-    ST X+, r22 ;30
-    ST X+, r22 ;31
-    ST X+, r22 ;32
-    ST X+, r22 ;33
-    ST X+, r22 ;34
-    ST X+, r22 ;35
-    ST X+, r22 ;36
-    ST X+, r22 ;37
-    ST X+, r22 ;38
-    ST X+, r22 ;39
+    ; r22      value
+    movw rXL, r24
+.rept console_width
+    ST X+, r22
+.endr
     ret

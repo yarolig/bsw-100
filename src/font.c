@@ -262,7 +262,7 @@ __attribute__ ((aligned (512))) PROGMEM const char font_char_scanlines[]  = {
 0x08, 0x95,   // ret
 };
 
-__attribute__ ((aligned (256))) char font_chars[]  = {
+__attribute__ ((aligned (256))) PROGMEM const char font_chars_P[]  = {
 //--------------------------------------
     // char #0 ? col 0
     215 ,// _______
