@@ -54,8 +54,8 @@ u8 console_top_row;
 u8 term_status, term_csi1, term_csi2;
 u8 background;
 #define tx_buf_len 16
-u8 tx_buf[tx_buf_len];
-u8 tx_buf_start, tx_buf_end;
+volatile u8 tx_buf[tx_buf_len];
+volatile u8 tx_buf_start, tx_buf_end;
 struct Options
 {
     u8 local_mode:1;
@@ -72,20 +72,6 @@ volatile u8 settings_pos;
 
 static INLINE bool is_bsw113() {
     return true;
-}
-
-void addbuf(u8 ch) {
-    tx_buf[tx_buf_end++] = ch;
-    tx_buf_end = tx_buf_end % tx_buf_len;
-}
-
-u8 getbuf() {
-    if (tx_buf_start==tx_buf_end) {
-        return 0;
-    }
-    u8 res = tx_buf[tx_buf_start++];
-    tx_buf_start = tx_buf_start % tx_buf_len;
-    return res;
 }
 
 #define TS_NORMAL 0
@@ -112,6 +98,110 @@ bool kb_shifted, kb_ctrled;
 
 
 
+/*
+bool rb_can_read() {
+    __asm__ ("" : "r=" (read_pos), "r=" (write_pos));
+    return read_pos != write_pos;
+}
+
+bool rb_can_write() {
+    __asm__ ("" : "r=" (read_pos), "r=" (write_pos));
+    return write_pos + 1 != read_pos;
+}
+
+u8 rb_read() {
+    __asm__ ("" : "r=" (read_pos), "r=" (write_pos));
+    u8 result = data[read_pos];
+    if (read_pos==size) {
+        read_pos = 0;
+    } else {
+        read_pos++;
+    }
+    return result;
+}
+
+void rb_write(u8 c) {
+    __asm__ ("" : "r=" (read_pos), "r=" (write_pos));
+    if (write_pos==size) {
+        write_pos = 0;
+    } else {
+        write_pos++;
+    }
+    data[write_pos] = c;
+}
+*/
+
+
+
+#define RING_BUFFER_POOL_SIZE 16
+#define RING_BUFFER_POOL_COUNT 4
+
+
+volatile __attribute__ ((aligned (RING_BUFFER_POOL_SIZE))) u8 ring_buffer_data[RING_BUFFER_POOL_SIZE*RING_BUFFER_POOL_COUNT];
+volatile __attribute__ ((aligned (2))) u8 ring_buffer_metadata[RING_BUFFER_POOL_COUNT*2];
+u8 ring_buffer_overflow;
+
+template<int POOL_NO>
+struct PolledRingBuffer {
+    INLINE volatile u8& read_pos() { return ring_buffer_metadata[POOL_NO*2]; }
+    INLINE volatile u8& write_pos() { return ring_buffer_metadata[POOL_NO*2+1]; }
+    INLINE volatile u8& item(u8 a) { return ring_buffer_data[POOL_NO*RING_BUFFER_POOL_SIZE+a]; }
+    INLINE u8 can_read() {
+        return read_pos() != write_pos();
+    }
+    INLINE u8 read() {
+        u8 r_pos = read_pos();
+        u8 result = item(r_pos);
+        read_pos() = (r_pos + 1) % RING_BUFFER_POOL_SIZE;
+        return result;
+    }
+
+    INLINE u8 can_write() {
+        return read_pos() != (write_pos() + 1) % RING_BUFFER_POOL_SIZE;
+    }
+    INLINE void write(u8 x) {
+        u8 r_pos = read_pos();
+        u8 w_pos = write_pos();
+        if (r_pos == (w_pos + 1) % RING_BUFFER_POOL_SIZE) {
+            ring_buffer_overflow |= (1 << POOL_NO);
+        } else {
+            item(w_pos) = x;
+            w_pos = (w_pos + 1) % RING_BUFFER_POOL_SIZE;
+            write_pos() = w_pos;
+
+        }
+    }
+    INLINE bool overflowed() {
+        return ring_buffer_overflow & (1<<POOL_NO);
+    }
+};
+PolledRingBuffer<0> keyboard_buffer;
+PolledRingBuffer<1> uart_tx_buffer;
+PolledRingBuffer<2> uart_rx_buffer;
+PolledRingBuffer<3> terminal_buffer;
+
+
+
+
+void addbuf(u8 ch) {
+    terminal_buffer.write(ch);
+    //tx_buf[tx_buf_end++] = ch;
+    //tx_buf_end = tx_buf_end % tx_buf_len;
+}
+
+u8 getbuf() {
+    /*if (tx_buf_start==tx_buf_end) {
+        return 0;
+    }
+    u8 res = tx_buf[tx_buf_start++];
+    tx_buf_start = tx_buf_start % tx_buf_len;
+    return res;
+    */
+    if (!terminal_buffer.can_read()) {
+        return 0;
+    }
+    return terminal_buffer.read();
+}
 
 
 INLINE void kb_error(u8 code) { }
@@ -590,9 +680,6 @@ static INLINE void prepare_scanline() {
                 clear_console_line(&console[current_console_row_no*console_width], ' ');
             }
         }
-        spi_update();
-        process_uart();
-        process_uart();
         return;
     }
     current_console_row_no += console_top_row;
