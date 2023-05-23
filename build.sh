@@ -2,7 +2,7 @@ set -e
 SRC="src/main.cpp src/font.c src/font_asm.S src/scancodes.cpp"
 
 mkdir -p out
-avr-gcc -I /home/ai0/AVR/include \
+avr-gcc  \
     -Wall -gstabs+ \
     -ffunction-sections -fdata-sections \
     -Wl,--gc-sections \

@@ -96,6 +96,7 @@ struct NullPin {
 };
 //-----------------------------------------------------------------------------
 
+#if defined (__AVR_ATmega328P__)
 PINDEF(NanoTX1_PD1, PORTD,    PIND, DDRD, PORTD1)
 PINDEF(NanoRX1_PD0, PORTD,    PIND, DDRD, PORTD0)
 PINDEF(NanoRESET_PC6, PORTC,  PINC, DDRC, PORTC6)
@@ -126,8 +127,19 @@ PINDEF(NanoA5_PC5_SCL, PORTC, PINC, DDRC, PORTC5)
 // Reset
 // GND
 // VIN
-//-----------------------------------------------------------------------------
+#elif defined (__AVR_ATtiny13A__)
+PINDEF(AttinyPB0_MOSI, PORTB, PINB, DDRB, PORTB0)
+PINDEF(AttinyPB1_MISO, PORTB, PINB, DDRB, PORTB1)
+PINDEF(AttinyPB2_SCK, PORTB, PINB, DDRB, PORTB2)
+PINDEF(AttinyPB3_TX, PORTB, PINB, DDRB, PORTB3)
+PINDEF(AttinyPB4_RX, PORTB, PINB, DDRB, PORTB4)
+PINDEF(AttinyPB5_RESET, PORTB, PINB, DDRB, PORTB5)
+#else
+#error "Unknown MCU"
+#endif
 
+//-----------------------------------------------------------------------------
+#if !defined (__AVR_ATtiny13A__)
 static INLINE void USART_Transmit( unsigned char data ) {
     while ( !( UCSR0A & _BV(UDRE0)) )
         ;
@@ -185,6 +197,7 @@ static INLINE void timer1_FastPWM_TopICR1() {
     OrVal(TCCR1B, _BV(WGM13));
 }
 
+#endif
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
